@@ -1,0 +1,1 @@
+*   @GoogleCloudPlatform/team-egg
