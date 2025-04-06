@@ -31,9 +31,9 @@
                     <a class="navbar-brand" href="/">My App</a>
                     <div class="navbar-nav">
                         {% if session.get('authenticated') %}
-                            <a class="nav-link" href="/logout">Logout</a>
+                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
                         {% else %}
-                            <a class="nav-link" href="/login">Login</a>
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
                         {% endif %}
                     </div>
                 </div>
