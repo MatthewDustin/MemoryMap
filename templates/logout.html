@@ -2,6 +2,22 @@
 
 {% block title %}Logout{% endblock %}
 
+{% block extra_css %}
+<style>
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border: none;
+        border-radius: 10px;
+    }
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        margin: 20px auto;
+        display: block;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container text-center mt-5">
     <div class="card mx-auto" style="max-width: 400px;">
