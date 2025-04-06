@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Logout{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <div class="card mx-auto" style="max-width: 400px;">
+        <div class="card-body">
+            <h3 class="card-title">Logged Out Successfully</h3>
+            <p class="card-text">You will be redirected to the login page in 5 seconds...</p>
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Redirect after 5 seconds
+    setTimeout(function() {
+        window.location.href = "{{ url_for('login') }}";
+    }, 5000);
+</script>
+{% endblock %}
