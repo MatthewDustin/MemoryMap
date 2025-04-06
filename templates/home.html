@@ -2,7 +2,68 @@
 
 {% block title %}Home{% endblock %}
 
+{% block extra_css %}
+<style>
+    #map-container {
+        width: 100%;
+        height: calc(100vh - 120px); /* Adjust based on header/footer height */
+        position: relative;
+    }
+    #map {
+        height: 100%;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDtv5qUV9Bgbz3m5GE42adVZRXHzp2bExU&callback=initMap" async defer></script>
+<script>
+    let map;
+    let markers = [];
+    
+    function initMap() {
+        // Default location: 36.214222, -81.679806 (converted from 36°12'51.2"N 81°40'47.3"W)
+        const defaultLocation = { lat: 36.214222, lng: -81.679806 };
+        
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: defaultLocation,
+            zoom: 12,
+            mapTypeId: "terrain",
+        });
+        
+        // Add click listener for adding markers
+        map.addListener("click", (event) => {
+            addMarker(event.latLng);
+        });
+        
+        // Add initial marker
+        addMarker(defaultLocation);
+    }
+    
+    function addMarker(location) {
+        const marker = new google.maps.Marker({
+            position: location,
+            map: map,
+            draggable: true
+        });
+        
+        markers.push(marker);
+        
+        // Optional: Add info window
+        const infoWindow = new google.maps.InfoWindow({
+            content: `Lat: ${location.lat().toFixed(6)}, Lng: ${location.lng().toFixed(6)}`
+        });
+        
+        marker.addListener("click", () => {
+            infoWindow.open(map, marker);
+        });
+    }
+</script>
+{% endblock %}
+
 {% block content %}
-<h1>Welcome to the Home Page</h1>
-<p>You are logged in as {{ session.user }}</p>
+<div id="map-container">
+    <div id="map"></div>
+</div>
 {% endblock %}
