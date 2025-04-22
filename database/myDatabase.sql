@@ -27,7 +27,10 @@ CREATE TABLE `posts` (
   `imageLink` varchar(250) NOT NULL,
   `description` text NOT NULL,
   `location` varchar(250) NOT NULL,
-  PRIMARY KEY (`post_id`)
+  `user_id` int DEFAULT NULL,
+  PRIMARY KEY (`post_id`),
+  KEY `fk_user_id` (`user_id`),
+  CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -37,7 +40,7 @@ CREATE TABLE `posts` (
 
 LOCK TABLES `posts` WRITE;
 /*!40000 ALTER TABLE `posts` DISABLE KEYS */;
-INSERT INTO `posts` VALUES (1,'https://images.pexels.com/photos/1996333/pexels-photo-1996333.jpeg','A white horse is a graceful and majestic animal, often symbolizing purity, strength, and nobility.','Boone'),(2,'https://blogscdn.thehut.net/app/uploads/sites/2405/2024/12/do-you-have-a-hyperactive-puppy-understanding-puppy-energy-levels-james-wellbeloved-uk_1733833823_1200x672_acf_cropped.jpg','A small puppy playfully bounds around, full of energy and curiosity, with big, bright eyes and soft fur.','Montgomery'),(3,'https://www.diamondpet.com/wp-content/uploads/2021/03/kitten-sitting-on-floor-031621.jpg','A relaxed cat lounges comfortably, peacefully resting with half-closed eyes and a calm demeanor.','Chicago');
+INSERT INTO `posts` VALUES (1,'https://images.pexels.com/photos/1996333/pexels-photo-1996333.jpeg','A white horse is a graceful and majestic animal, often symbolizing purity, strength, and nobility.','Boone',1),(2,'https://blogscdn.thehut.net/app/uploads/sites/2405/2024/12/do-you-have-a-hyperactive-puppy-understanding-puppy-energy-levels-james-wellbeloved-uk_1733833823_1200x672_acf_cropped.jpg','A small puppy playfully bounds around, full of energy and curiosity, with big, bright eyes and soft fur.','Montgomery',2),(3,'https://www.diamondpet.com/wp-content/uploads/2021/03/kitten-sitting-on-floor-031621.jpg','A relaxed cat lounges comfortably, peacefully resting with half-closed eyes and a calm demeanor.','Chicago',3);
 /*!40000 ALTER TABLE `posts` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -75,4 +78,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-08  0:04:00
+-- Dump completed on 2025-04-22 14:34:25
