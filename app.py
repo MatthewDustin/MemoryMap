@@ -11,18 +11,71 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import logging
 import signal
 import sys
 import os
 from types import FrameType
 
 from flask import Flask, redirect, url_for, session, render_template, request, send_from_directory
-
+from sshtunnel import SSHTunnelForwarder
+from .auth import login_required
 from utils.logging import logger
+from flask_wtf import CSRFProtect
 
-app = Flask(__name__, template_folder='templates')
-app.secret_key = "EXTRASECRET"
+csrf = CSRFProtect()
+
+def create_app():
+    # create and configure the app
+    app = Flask(__name__, instance_relative_config=True, static_folder=None, template_folder='templates')
+    app.config.from_mapping(
+        SECRET_KEY="EXTRASECRET",
+        DATABASE=(
+            f"host={os.environ.get('MYSQL_SERVICE_HOST')} "
+            f"user={os.environ.get('MYSQL_USER')} password={os.environ.get('MYSQL_PASSWORD')}"
+        )
+    )
+
+    # Load current software version into the CONFIG
+    try:
+        with open("VERSION", "r") as f:
+            app.config["BUILD_VERSION"] = f.read().strip()
+    except FileNotFoundError:
+        app.config["BUILD_VERSION"] = "Unknown"
+
+    # load the instance config, if it exists, when not testing
+    app.config.from_prefixed_env()
+    app.config.from_pyfile("config.py", silent=True)
+
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
+
+    # ensure the instance folder exists
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
+
+    csrf.init_app(app)
+
+    # Error handlers
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return render_template("codes/401.html"), 401
+
+    @app.errorhandler(404)
+    def page_not_found(error):
+        return render_template("codes/404.html"), 404
+
+    # Static files
+    @app.route("/static/<path:filename>")
+    @login_required
+    def static(filename):
+        return send_from_directory("static", filename)
+
+    return app
 
 @app.route('/templates/<path:filename>')
 def serve_template(filename):
