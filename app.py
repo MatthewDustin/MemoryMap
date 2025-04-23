@@ -21,7 +21,7 @@ from flask import Flask, redirect, url_for, session, render_template, request, s
 
 from utils.logging import logger
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.secret_key = "EXTRASECRET"
 
 @app.route('/templates/<path:filename>')
@@ -55,13 +55,20 @@ def login():
         if username == 'admin' and password == 'password':  # Replace with real auth
             session['authenticated'] = True
             session['user'] = username
-            return redirect(url_for('hello'))
+            return redirect(url_for('index'))
         else:
             session['error_message'] = 'Invalid username or password'
             return redirect(url_for('login'))
-    header("Content-type: text/html")
+    
     return render_template('login.html', 
                          error_message=session.pop('error_message', None))
+
+@app.route('/logout')
+def logout():
+    # Clear the user session
+    session.clear()
+    logger.info("User logged out")
+    return render_template('logout.html')
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
