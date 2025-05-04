@@ -20,7 +20,7 @@ from types import FrameType
 
 from flask import Flask, redirect, url_for, session, render_template, request, send_from_directory
 from sshtunnel import SSHTunnelForwarder
-from .auth import login_required
+from auth.auth import login_required
 from utils.logging import logger
 from flask_wtf import CSRFProtect
 
@@ -160,7 +160,6 @@ def hash(password):
 
 def getUsernames():
     # Fetch usernames from the database
-    import sqlite3
     # set URL for database
     database_url = os.getenv('DATABASE_URL', 'localhost')
     
