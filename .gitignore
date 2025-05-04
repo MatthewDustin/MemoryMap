@@ -17,7 +17,9 @@
 # Exclude locally installed dependencies
 venv/
 __pycache__/
-
+*.env
+*.envrc
+.env
 # Exclude local IDE settings
 .idea/
 .vscode/

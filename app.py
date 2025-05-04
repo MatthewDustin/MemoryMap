@@ -15,6 +15,7 @@ import logging
 import signal
 import sys
 import os
+import mysql.connector
 from types import FrameType
 
 from flask import Flask, redirect, url_for, session, render_template, request, send_from_directory
@@ -77,6 +78,8 @@ def create_app():
 
     return app
 
+app = create_app()
+
 @app.route('/templates/<path:filename>')
 def serve_template(filename):
     return send_from_directory(os.path.join(app.root_path, 'templates'), filename, mimetype='text/html')
@@ -126,7 +129,7 @@ def logout():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     usernames = getUsernames()
-    passwords = getPasswords()
+    # passwords = getPasswords()  # Removed or commented out as getPasswords is not defined
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -142,6 +145,14 @@ def register():
     return render_template('register.html', 
                          error_message=session.pop('error_message', None))
 
+@app.route('/test-db')
+def test_db():
+    try:
+        usernames = getUsernames()
+        return f"Connected! Usernames: {usernames}"
+    except Exception as e:
+        return f"Error: {e}"
+    
 def hash(password):
     # Hash the password using a secure hashing algorithm (e.g., bcrypt)
     import hashlib
@@ -151,14 +162,21 @@ def getUsernames():
     # Fetch usernames from the database
     import sqlite3
     # set URL for database
+    database_url = os.getenv('DATABASE_URL', 'localhost')
     
-    conn = sqlite3.connect('database.db')  # connect to your database
+    conn = mysql.connector.connect(
+        host=database_url,
+        #user=os.getenv('MYSQL_USER', 'your-username'),
+        #password=os.getenv('MYSQL_PASSWORD', 'your-password'),
+        database=os.getenv('MYSQL_DATABASE', 'your-database')
+    )
     # connect to the database
     cursor = conn.cursor()
     cursor.execute("SELECT username FROM users")
-    usernames = cursor.fetchall()
+    usernames = [row[0] for row in cursor.fetchall()]
     cursor.close()
-    return [user[0] for user in usernames]
+    conn.close()
+    return usernames
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
@@ -174,6 +192,8 @@ def shutdown_handler(signal_int: int, frame: FrameType) -> None:
 def add_header(response):
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
+
+
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
