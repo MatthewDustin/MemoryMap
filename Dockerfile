@@ -24,10 +24,7 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 
 # Install dependencies.
-RUN python -m venv /venv && . /venv/bin/activate && pip install -r requirements.txt
-
-# Update pip
-RUN pip install --upgrade pip
+RUN python -m venv /venv && . /venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy local code to the container image.
 COPY . ./
