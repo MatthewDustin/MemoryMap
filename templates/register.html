@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-card {
+        max-width: 400px;
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-control:focus {
+        border-color: #4361ee;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-card bg-white">
+    <h2 class="mb-4 text-center">Register</h2>
+    
+    {% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+    {% endif %}
+    
+    <script>
+        const users = {{ usernames | safe }};
+    </script>
+    <form method="POST" action="{{ url_for('register') }}">
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        //check if username already exists
+        <script>
+            document.getElementById('username').addEventListener('input', function() {
+                const username = this.value;
+                if (users.includes(username)) {
+                    this.setCustomValidity('Username already exists');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        </script>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+</div>
+{% endblock %}

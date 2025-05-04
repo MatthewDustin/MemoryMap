@@ -59,9 +59,45 @@ def login():
         else:
             session['error_message'] = 'Invalid username or password'
             return redirect(url_for('login'))
-    header("Content-type: text/html")
     return render_template('login.html', 
                          error_message=session.pop('error_message', None))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    usernames = getUsernames()
+    passwords = getPasswords()
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        password = hash(password)
+        
+        session['authenticated'] = True
+        session['user'] = username
+        return redirect(url_for('hello'))
+        #else:
+            #session['error_message'] = 'Invalid username or password'
+            #return redirect(url_for('login'))
+    return render_template('register.html', 
+                         error_message=session.pop('error_message', None))
+
+def hash(password):
+    # Hash the password using a secure hashing algorithm (e.g., bcrypt)
+    import hashlib
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def getUsernames():
+    # Fetch usernames from the database
+    import sqlite3
+    # set URL for database
+    
+    conn = sqlite3.connect('database.db')  # connect to your database
+    # connect to the database
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM users")
+    usernames = cursor.fetchall()
+    cursor.close()
+    return [user[0] for user in usernames]
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
