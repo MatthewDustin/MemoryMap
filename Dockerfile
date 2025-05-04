@@ -23,11 +23,11 @@ WORKDIR /usr/src/app
 # Copying this separately prevents re-running pip install on every code change.
 COPY requirements.txt ./
 
-# Update pip
-RUN pip install --upgrade pip
-
 # Install dependencies.
 RUN python -m venv /venv && . /venv/bin/activate && pip install -r requirements.txt
+
+# Update pip
+RUN pip install --upgrade pip
 
 # Copy local code to the container image.
 COPY . ./
