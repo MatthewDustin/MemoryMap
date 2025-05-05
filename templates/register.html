@@ -29,7 +29,8 @@
     {% endif %}
     
     <script>
-        const users = {{ usernames | safe }};
+        const users = JSON.parse('{{ usernames | tojson | safe }}');
+        console.log(users);
     </script>
     <form method="POST" action="{{ url_for('register') }}">
         <div class="mb-3">

@@ -153,7 +153,8 @@ def register():
         
         session['authenticated'] = True
         session['user'] = username
-        return redirect(url_for('hello'))
+        # send usernames to page
+        return redirect(url_for('hello', usernames=usernames))
         #else:
             #session['error_message'] = 'Invalid username or password'
             #return redirect(url_for('login'))
@@ -180,21 +181,24 @@ def hash(password):
 def getUsernames():
     # Fetch usernames from the database
     # set URL for database
+    #user=os.getenv('MYSQL_USER', 'your-username'),
+    #password=os.getenv('MYSQL_PASSWORD', 'your-password'),
     database_url = os.getenv('DATABASE_URL', 'localhost')
-    
-    conn = mysql.connector.connect(
-        host=database_url,
-        #user=os.getenv('MYSQL_USER', 'your-username'),
-        #password=os.getenv('MYSQL_PASSWORD', 'your-password'),
-        database=os.getenv('MYSQL_DATABASE', 'your-database')
-    )
-    # connect to the database
-    cursor = conn.cursor()
-    cursor.execute("SELECT username FROM users")
-    usernames = [row[0] for row in cursor.fetchall()]
-    cursor.close()
-    conn.close()
-    return usernames
+    try:
+        conn = mysql.connector.connect(
+            host=database_url,
+            database=os.getenv('MYSQL_DATABASE', 'mydatabase')
+        )
+        # connect to the database
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM users")
+        usernames = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        return usernames
+    except mysql.connector.Error as err:
+        logger.error(f"Error: {err}")
+        return ["Error fetching usernames: " + str(err)]
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
