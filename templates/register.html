@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Login{% endblock %}
+{% block title %}Register{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -27,33 +27,41 @@
         {{ error_message }}
     </div>
     {% endif %}
-    
-    <script>
-        const users = JSON.parse('{{ usernames | tojson | safe }}');
-        console.log(users);
-    </script>
+
     <form method="POST" action="{{ url_for('register') }}">
+        {{ form.hidden_tag() }}
+
         <div class="mb-3">
             <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+            {{ form.username(class="form-control", id="username") }}
+            {% if form.username.errors %}
+            <div class="text-danger">
+                {{ form.username.errors[0] }}
+            </div>
+            {% endif %}
         </div>
-        //check if username already exists
-        <script>
-            document.getElementById('username').addEventListener('input', function() {
-                const username = this.value;
-                if (users.includes(username)) {
-                    this.setCustomValidity('Username already exists');
-                } else {
-                    this.setCustomValidity('');
-                }
-            });
-        </script>
+
         <div class="mb-3">
             <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+            {{ form.password(class="form-control", id="password") }}
+            {% if form.password.errors %}
+            <div class="text-danger">
+                {{ form.password.errors[0] }}
+            </div>
+            {% endif %}
         </div>
         
-        <button type="submit" class="btn btn-primary w-100">Login</button>
+        <div class="mb-3">
+            <label for="confirm_password" class="form-label">Confirm Password</label>
+            {{ form.confirm_password(class="form-control", id="confirm_password") }}
+            {% if form.confirm_password.errors %}
+            <div class="text-danger">
+                {{ form.confirm_password.errors[0] }}
+            </div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Register</button>
     </form>
 </div>
 {% endblock %}

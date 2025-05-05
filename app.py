@@ -26,12 +26,30 @@ from flask_wtf import CSRFProtect
 from dotenv import load_dotenv
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, EqualTo
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
+    
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        DataRequired(),
+        EqualTo('password', message='Passwords must match')
+    ])
+    submit = SubmitField('Register')
+    
+def get_db_connection():
+    """Establish and return a new database connection."""
+    return mysql.connector.connect(
+        host=os.getenv('DATABASE_URL', 'localhost'),
+        user="admin",
+        password="memorymap",
+        database="memorymapdb"
+    )
     
 load_dotenv()
 csrf = CSRFProtect()
@@ -121,7 +139,7 @@ def login():
         password = form.password.data
         
         # Add your authentication logic here
-        if username == 'admin' and password == 'password':  # Replace with real auth
+        if checkLoginAttempt(username, password):  # Replace with real auth
             session['authenticated'] = True
             session['user'] = username
             return redirect(url_for('index'))
@@ -143,23 +161,32 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    form = RegisterForm()
     usernames = getUsernames()
     # passwords = getPasswords()  # Removed or commented out as getPasswords is not defined
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        if username in usernames:
+            session['error_message'] = 'Username already exists'
+            return redirect(url_for('register'))
         
         password = hash(password)
-        
-        session['authenticated'] = True
-        session['user'] = username
-        # send usernames to page
-        return redirect(url_for('hello', usernames=usernames))
-        #else:
-            #session['error_message'] = 'Invalid username or password'
-            #return redirect(url_for('login'))
+        if (addUser(username, password)):
+            session['authenticated'] = True
+            session['user'] = username
+            logger.info("User authenticated, showing home page")
+
+            logger.info(logField="custom-entry", arbitraryField="custom-entry")
+            logger.info("Child logger with trace Id.")
+
+            return render_template('home.html', user=session.get('user'))
+        else:
+            session['error_message'] = 'Failed to register user'
+            return redirect(url_for('register'))
     return render_template('register.html', 
-                         error_message=session.pop('error_message', None))
+                            form=form,
+                            error_message=session.pop('error_message', None))
 
 @app.route('/copyright')
 def copyright():
@@ -178,17 +205,45 @@ def hash(password):
     import hashlib
     return hashlib.sha256(password.encode()).hexdigest()
 
+def checkLoginAttempt(username, password):
+    # Check if the username and password match in the database
+    # set URL for database
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hash(password)))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return result is not None
+    except mysql.connector.Error as err:
+        logger.error(f"Error: {err}")
+        return False
+
+def addUser(username, password):
+    # Add user to the database
+    # set URL for database
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except mysql.connector.Error as err:
+        logger.error(f"Error: {err}")
+        return False
+        
+        
 def getUsernames():
     # Fetch usernames from the database
     # set URL for database
     #user=os.getenv('MYSQL_USER', 'your-username'),
     #password=os.getenv('MYSQL_PASSWORD', 'your-password'),
-    database_url = os.getenv('DATABASE_URL', 'localhost')
+
     try:
-        conn = mysql.connector.connect(
-            host=database_url,
-            database=os.getenv('MYSQL_DATABASE', 'mydatabase')
-        )
+        conn = get_db_connection()
         # connect to the database
         cursor = conn.cursor()
         cursor.execute("SELECT username FROM users")
@@ -198,7 +253,7 @@ def getUsernames():
         return usernames
     except mysql.connector.Error as err:
         logger.error(f"Error: {err}")
-        return ["Error fetching usernames: " + str(err)]
+        return []
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
