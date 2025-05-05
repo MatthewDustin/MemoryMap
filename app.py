@@ -23,12 +23,22 @@ from sshtunnel import SSHTunnelForwarder
 from auth.auth import login_required
 from utils.logging import logger
 from flask_wtf import CSRFProtect
+from dotenv import load_dotenv
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired
 
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
+    
+load_dotenv()
 csrf = CSRFProtect()
 
 def create_app():
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True, static_folder=None, template_folder='templates')
+    app = Flask(__name__, instance_relative_config=True, static_folder='static', template_folder='templates')
     app.config.from_mapping(
         SECRET_KEY="EXTRASECRET",
         DATABASE=(
@@ -62,19 +72,21 @@ def create_app():
     csrf.init_app(app)
 
     # Error handlers
-    @app.errorhandler(401)
-    def unauthorized(error):
-        return render_template("codes/401.html"), 401
-
     @app.errorhandler(404)
     def page_not_found(error):
-        return render_template("codes/404.html"), 404
+        return render_template("404.html", error_code=True), 404
 
-    # Static files
-    @app.route("/static/<path:filename>")
-    @login_required
-    def static(filename):
-        return send_from_directory("static", filename)
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        return render_template("500.html", error_code=True), 500
+
+    @app.errorhandler(503)
+    def service_unavailable(error):
+        return render_template("503.html", error_code=True), 503
+
+    @app.errorhandler(504)
+    def gateway_timeout(error):
+        return render_template("504.html", error_code=True), 504
 
     return app
 
@@ -103,9 +115,10 @@ def index() -> str:
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
         
         # Add your authentication logic here
         if username == 'admin' and password == 'password':  # Replace with real auth
@@ -116,8 +129,10 @@ def login():
             session['error_message'] = 'Invalid username or password'
             return redirect(url_for('login'))
     
-    return render_template('login.html', 
-                         error_message=session.pop('error_message', None))
+    return render_template('login.html',
+                           form=form,
+                           error_message=session.pop('error_message', None))
+
 
 @app.route('/logout')
 def logout():
@@ -144,6 +159,10 @@ def register():
             #return redirect(url_for('login'))
     return render_template('register.html', 
                          error_message=session.pop('error_message', None))
+
+@app.route('/copyright')
+def copyright():
+    return render_template('copyright.html')
 
 @app.route('/test-db')
 def test_db():
@@ -189,7 +208,7 @@ def shutdown_handler(signal_int: int, frame: FrameType) -> None:
 
 @app.after_request
 def add_header(response):
-    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    #response.headers['Content-Type'] = 'text/html; charset=utf-8'
     return response
 
 
@@ -202,7 +221,7 @@ if __name__ == "__main__":
     # handles Ctrl-C termination
     signal.signal(signal.SIGINT, shutdown_handler)
 
-    app.run(host="localhost", port=8080, debug=True)
+    app.run(host="localhost", port=8088, debug=True)
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)

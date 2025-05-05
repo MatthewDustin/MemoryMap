@@ -29,14 +29,26 @@
     {% endif %}
     
     <form method="POST" action="{{ url_for('login') }}">
+        {{ form.hidden_tag() }}
+        
         <div class="mb-3">
             <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+            {{ form.username(class="form-control", id="username") }}
+            {% if form.username.errors %}
+            <div class="text-danger">
+                {{ form.username.errors[0] }}
+            </div>
+            {% endif %}
         </div>
         
         <div class="mb-3">
             <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+            {{ form.password(class="form-control", id="password") }}
+            {% if form.password.errors %}
+            <div class="text-danger">
+                {{ form.password.errors[0] }}
+            </div>
+            {% endif %}
         </div>
         
         <button type="submit" class="btn btn-primary w-100">Login</button>
