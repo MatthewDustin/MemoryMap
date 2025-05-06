@@ -25,7 +25,7 @@ from utils.logging import logger
 from flask_wtf import CSRFProtect
 from dotenv import load_dotenv
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, EqualTo
 
 class LoginForm(FlaskForm):
@@ -41,6 +41,11 @@ class RegisterForm(FlaskForm):
         EqualTo('password', message='Passwords must match')
     ])
     submit = SubmitField('Register')
+
+class PostForm(FlaskForm):
+    imageLink = StringField('Image Link', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    submit = SubmitField('Update')
     
 def get_db_connection():
     """Establish and return a new database connection."""
@@ -124,12 +129,11 @@ def index() -> str:
         logger.info("User not authenticated, redirecting to login")
         return redirect(url_for('login'))
 
+    
     logger.info("User authenticated, showing home page")
-
-    logger.info(logField="custom-entry", arbitraryField="custom-entry")
-    logger.info("Child logger with trace Id.")
-
-    return render_template('home.html', user=session.get('user'))
+    form = PostForm()
+    posts = get_all_posts()
+    return render_template('home.html', user=session.get('user'), form=form, posts=posts)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -142,7 +146,14 @@ def login():
         if checkLoginAttempt(username, password):  # Replace with real auth
             session['authenticated'] = True
             session['user'] = username
-            return redirect(url_for('index'))
+            logger.info("User authenticated, showing home page")
+
+            logger.info(logField="custom-entry", arbitraryField="custom-entry")
+            logger.info("Child logger with trace Id.")
+
+            form = PostForm()
+            posts = get_all_posts()
+            return render_template('home.html', user=session.get('user'), form=form, posts=posts)
         else:
             session['error_message'] = 'Invalid username or password'
             return redirect(url_for('login'))
@@ -179,14 +190,118 @@ def register():
 
             logger.info(logField="custom-entry", arbitraryField="custom-entry")
             logger.info("Child logger with trace Id.")
-
-            return render_template('home.html', user=session.get('user'))
+            
+            form = PostForm()
+            posts = get_all_posts()
+            return render_template('home.html', user=session.get('user'), form=form, posts=posts)
         else:
             session['error_message'] = 'Failed to register user'
             return redirect(url_for('register'))
     return render_template('register.html', 
                             form=form,
                             error_message=session.pop('error_message', None))
+
+@app.route('/create-post', methods=['POST'])
+@login_required
+def create_post():
+    form = PostForm()
+    posts = get_all_posts()
+    # Get the data from the request
+    data = request.get_json()
+    lat = data.get('lat')
+    lng = data.get('lng')
+    imageLink = data.get('imageLink')
+    description = data.get('description')
+
+    #convert lat and lng to one string
+    location = f"{lat},{lng}"
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Fetch the user_id for the authenticated user
+        cursor.execute("SELECT user_id FROM users WHERE username = %s", (session.get('user'),))
+        user_id = cursor.fetchone()
+        if not user_id:
+            return {'error': 'User not found'}, 404
+        
+        user_id = user_id[0]  # Extract the ID from the result tuple
+        
+        cursor.execute(
+            "INSERT INTO posts (location, imageLink, description, user_id) VALUES (%s, %s, %s, %s)",
+            (location, imageLink, description, user_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        logger.error(f"Error: {err}")
+        return render_template('home.html', error_message='Failed to create post', form=form, posts=posts), 500
+
+    posts = get_all_posts()
+    return render_template('home.html', user=session.get('user'), form=form, posts=posts)
+
+@app.route('/get-post', methods=['GET'])
+@login_required
+def get_post():
+    location = request.args.get('location')
+    if not location:
+        return {'error': 'Location is required'}, 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM posts WHERE location = %s", (location,))
+        post = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not post:
+            return {'error': 'Post not found'}, 404
+
+        return {
+            'user': session.get('user'),
+            'imageLink': post['imageLink'],
+            'description': post['description']
+        }
+    except mysql.connector.Error as err:
+        logger.error(f"Error: {err}")
+        return {'error': 'Failed to fetch post data'}, 500
+
+def get_all_posts():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM posts")
+        posts = cursor.fetchall()
+        #filter out posts with location without a comma
+        posts = [post for post in posts if ',' in post['location']]
+        
+        #get all usernames from the database
+        cursor.execute("SELECT user_id, username FROM users")
+        users = cursor.fetchall()
+        #replace user_id with username in posts
+        for post in posts:
+            for user in users:
+                if post['user_id'] == user['user_id']:
+                    post['username'] = user['username']
+                    break
+        #remove user_id from posts
+        for post in posts:
+            del post['user_id']
+        #replace location with lat and lng
+        for post in posts:
+            lat, lng = post['location'].split(',')
+            post['lat'] = lat
+            post['lng'] = lng
+        for post in posts:
+            del post['location']
+        cursor.close()
+        conn.close()
+        return posts
+    except mysql.connector.Error as err:
+        logger.error(f"Error: {err}")
+        return []
 
 @app.route('/copyright')
 def copyright():

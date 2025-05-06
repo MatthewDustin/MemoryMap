@@ -21,7 +21,13 @@
 <script>
     let map;
     let markers = [];
-    
+    var user = JSON.parse('{{ user|tojson|safe }}');
+    var posts = JSON.parse('{{ posts|tojson|safe }}');
+    let lat = 0;
+    let lng = 0;
+    var imageLink = '';
+    var description = '';
+
     function initMap() {
         // Default location: 36.214222, -81.679806 (converted from 36°12'51.2"N 81°40'47.3"W)
         const defaultLocation = { lat: 36.214222, lng: -81.679806 };
@@ -34,29 +40,117 @@
         
         // Add click listener for adding markers
         map.addListener("click", (event) => {
-            addMarker(event.latLng);
+            lat = event.latLng.lat().toFixed(6);
+            lng = event.latLng.lng().toFixed(6);
+            addMarker(event.latLng, `${user}'s Post`);
+            document.getElementById('formPopup').style.display='block';
         });
+
+        const popupContent = `<div id="postPopup" class="popup">
+                                    <div class="popup-content">
+                                        <span class="close" onclick="document.getElementById('postPopup').style.display='none'">&times;</span>
+                                        <h2>${user}'s Post</h2>
+                                        <div id="image">
+                                            <img src="${imageLink}" alt="Image" style="width:100px;height:100px;">
+                                        </div>
+                                        <div id="description">
+                                            <p>${description}</p>
+                                        </div>
+                                    </div>
+                                </div>`;
+
+        const popup = document.createElement('div');
+        popup.innerHTML = popupContent;
+        document.body.appendChild(popup);
         
-        // Add initial marker
-        addMarker(defaultLocation);
+        postPopup.style.display = 'none';
+        
+        // Close the popup when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target == postPopup) {
+                postPopup.style.display = "none";
+            }
+        };
+        // add markers for all posts
+        {% for post in posts %}
+            const location = { lat: {{ post.lat }}, lng: {{ post.lng }} };
+            addMarker(location, "{{ post.user }}'s Post");
+        {% endfor %}
     }
     
-    function addMarker(location) {
+    function addMarker(location, content) {
         const marker = new google.maps.Marker({
             position: location,
             map: map,
             draggable: true
         });
         
-        markers.push(marker);
+        markers.push({ marker, content });
         
-        // Optional: Add info window
-        const infoWindow = new google.maps.InfoWindow({
-            content: `Lat: ${location.lat().toFixed(6)}, Lng: ${location.lng().toFixed(6)}`
-        });
         
         marker.addListener("click", () => {
-            infoWindow.open(map, marker);
+            showPopup(marker);
+        });
+    }
+
+    
+    function showPopup(marker) {
+        const popup = document.getElementById("postPopup");
+        let lat = String(marker.getPosition().lat());
+        let lng = String(marker.getPosition().lng());
+        console.log("marker clicked", marker.getPosition());
+        console.log(lat, lng);
+        console.log(posts);
+        const data = posts.find(post => post.lat === lat && post.lng === lng);
+        console.log(data);
+        popup.innerHTML = `
+                <div class="popup-content">
+                    <span class="close" onclick="document.getElementById('postPopup').style.display='none'">&times;</span>
+                    <h2>${data.username}'s Post</h2>
+                    <div id="image">
+                        <img src="${data.imageLink}" alt="Image" style="width:100px;height:100px;">
+                    </div>
+                    <div id="description">
+                        <p>${data.description}</p>
+                    </div>
+                </div>`;
+        popup.style.display = "block";
+    }
+    function submitForm(event) {
+        event.preventDefault(); // Prevent the default form submission behavior
+
+        const form = document.getElementById('postForm');
+        const formData = new FormData(form);
+
+        formData.append('lat', String(lat));
+        formData.append('lng', String(lng));
+        // Convert FormData to JSON
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // Include CSRF token
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert(result.error);
+            } else {
+                alert('Post created successfully!');
+                document.getElementById('formPopup').style.display = 'none';
+                form.reset(); // Reset the form fields
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to create post.');
         });
     }
 </script>
@@ -66,4 +160,36 @@
 <div id="map-container">
     <div id="map"></div>
 </div>
+<!-- Popup-->
+<div id="formPopup" class="popup" style="display:none;">
+    <div class="popup-content">
+        <span class="close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
+        <h2>Post Details</h2>
+        <form id="postForm" method="POST" action="{{ url_for('create_post') }}" onsubmit="submitForm(event)">
+            <div class="mb-3">
+                <label for="imageLink" class="form-label">Image Link:</label>
+                {{ form.imageLink(class="form-control", id="imageLink") }}
+                {% if form.imageLink.errors %}
+                <div class="text-danger">
+                    {{ form.imageLink.errors[0] }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description:</label>
+                {{ form.description(class="form-control", id="description", rows="4", cols="50") }}
+                {% if form.description.errors %}
+                <div class="text-danger">
+                    {{ form.description.errors[0] }}
+                </div>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary w-100">{{ form.submit() }}</button>
+        </form>
+    </div>
+</div>
+
+
+
+
 {% endblock %}
