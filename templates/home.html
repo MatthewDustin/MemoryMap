@@ -13,6 +13,47 @@
         height: 100%;
         width: 100%;
     }
+    .centered-axis-x {
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, 0);
+    }
+    .popup-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .popup-content img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+    }
+    .popup-content h2 {
+        margin: 0 0 10px 0;
+    }
+    .popup-content p {
+        margin: 0;
+    }
+    .popup-content .close {
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 24px;
+        color: #000;
+    }
+    .popup-content .close:hover {
+        color: red;
+    }
+    .popup-content .close:focus {
+        outline: none;
+    }
+    .popup-content .close:active {
+        transform: scale(0.9);
+    }
+    
 </style>
 {% endblock %}
 
@@ -46,22 +87,35 @@
             document.getElementById('formPopup').style.display='block';
         });
 
-        const popupContent = `<div id="postPopup" class="popup">
-                                    <div class="popup-content">
-                                        <span class="close" onclick="document.getElementById('postPopup').style.display='none'">&times;</span>
-                                        <h2>${user}'s Post</h2>
-                                        <div id="image">
-                                            <img src="${imageLink}" alt="Image" style="width:100px;height:100px;">
-                                        </div>
-                                        <div id="description">
-                                            <p>${description}</p>
-                                        </div>
-                                    </div>
-                                </div>`;
+        const popupContent =`<div class="popup-content">
+                                <span class="close" onclick="document.getElementById('postPopup').style.display='none'">&times;</span>
+                                <h2>${user}'s Post</h2>
+                                <div id="image">
+                                    <img src="${imageLink}" alt="Image" style="width:100px;height:100px;">
+                                </div>
+                                <div id="description">
+                                    <p>${description}</p>
+                                </div>
+                            </div>`;
 
-        const popup = document.createElement('div');
-        popup.innerHTML = popupContent;
-        document.body.appendChild(popup);
+        //append the popup directly to the body
+        const postPopup = document.createElement('div');
+        postPopup.id = "postPopup";
+        postPopup.classList.add("popup", "centered-axis-x");
+        postPopup.style.display = "none";
+        postPopup.style.position = "absolute";
+        postPopup.style.zIndex = "1000";
+        postPopup.style.backgroundColor = "white";
+        postPopup.style.border = "1px solid #ccc";
+        postPopup.style.padding = "10px";
+        postPopup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.1)";
+        postPopup.style.borderRadius = "5px";
+        postPopup.style.width = "33vw";
+        postPopup.style.height = "auto";
+        postPopup.style.top = "10vh";   
+
+        postPopup.innerHTML = popupContent;
+        document.body.appendChild(postPopup);
         
         postPopup.style.display = 'none';
         
