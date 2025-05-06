@@ -13,7 +13,18 @@
         height: 100%;
         width: 100%;
     }
-    .centered-axis-x {
+    .popup {
+        display : none;
+        position : absolute;
+        z-index:  1000;
+        background-color : white;
+        border : 1px solid #ccc;
+        padding : 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius : 5px;
+        width : 33vw;
+        height : auto;
+        top : 10vh;   
         position: absolute;
         left: 50%;
         transform: translate(-50%, 0);
@@ -53,7 +64,7 @@
     .popup-content .close:active {
         transform: scale(0.9);
     }
-    
+
 </style>
 {% endblock %}
 
@@ -101,19 +112,7 @@
         //append the popup directly to the body
         const postPopup = document.createElement('div');
         postPopup.id = "postPopup";
-        postPopup.classList.add("popup", "centered-axis-x");
-        postPopup.style.display = "none";
-        postPopup.style.position = "absolute";
-        postPopup.style.zIndex = "1000";
-        postPopup.style.backgroundColor = "white";
-        postPopup.style.border = "1px solid #ccc";
-        postPopup.style.padding = "10px";
-        postPopup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.1)";
-        postPopup.style.borderRadius = "5px";
-        postPopup.style.width = "33vw";
-        postPopup.style.height = "auto";
-        postPopup.style.top = "10vh";   
-
+        postPopup.className = "popup";
         postPopup.innerHTML = popupContent;
         document.body.appendChild(postPopup);
         
@@ -217,7 +216,7 @@
 <!-- Popup-->
 <div id="formPopup" class="popup" style="display:none;">
     <div class="popup-content">
-        <span class="close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
+        <span class="close" onclick="document.getElementById('formPopup').style.display='none'">&times;</span>
         <h2>Post Details</h2>
         <form id="postForm" method="POST" action="{{ url_for('create_post') }}" onsubmit="submitForm(event)">
             <div class="mb-3">
@@ -238,7 +237,7 @@
                 </div>
                 {% endif %}
             </div>
-            <button type="submit" class="btn btn-primary w-100">{{ form.submit() }}</button>
+            {{ form.submit(class="btn btn-primary w-100") }}
         </form>
     </div>
 </div>

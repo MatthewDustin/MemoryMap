@@ -45,7 +45,7 @@ class RegisterForm(FlaskForm):
 class PostForm(FlaskForm):
     imageLink = StringField('Image Link', validators=[DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired()])
-    submit = SubmitField('Update')
+    submit = SubmitField('Post')
     
 def get_db_connection():
     """Establish and return a new database connection."""
