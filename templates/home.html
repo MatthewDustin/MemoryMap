@@ -75,6 +75,7 @@
     let markers = [];
     var user = JSON.parse('{{ user|tojson|safe }}');
     var posts = JSON.parse('{{ posts|tojson|safe }}');
+    let postURL = JSON.parse('{{ url_for("create_post")|tojson|safe }}');
     let lat = 0;
     let lng = 0;
     var imageLink = '';
@@ -128,8 +129,9 @@
         var post = null;
         for (let i = 0; i < posts.length; i++) {
             post  = posts[i];
-            postLocation = { lat: post.lat, lng: post.lng };
-            addMarker(postLocation, "{{ post.user }}'s Post");
+            console.log(post);
+            postLocation = { lat: parseFloat(post.lat), lng: parseFloat(post.lng) };
+            addMarker(postLocation, post.user + "'s Post");
         }
     }
     
@@ -185,7 +187,7 @@
             data[key] = value;
         });
 
-        fetch(form.action, {
+        fetch(postURL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -193,7 +195,6 @@
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
         .then(result => {
             if (result.error) {
                 alert(result.error);
