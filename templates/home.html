@@ -125,10 +125,12 @@
             }
         };
         // add markers for all posts
-        {% for post in posts %}
-            const postLocation = { lat: {{ post.lat }}, lng: {{ post.lng }} };
+        var post = null;
+        for (let i = 0; i < posts.length; i++) {
+            post  = posts[i];
+            postLocation = { lat: post.lat, lng: post.lng };
             addMarker(postLocation, "{{ post.user }}'s Post");
-        {% endfor %}
+        }
     }
     
     function addMarker(location, content) {
