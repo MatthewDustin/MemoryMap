@@ -126,8 +126,8 @@
         };
         // add markers for all posts
         {% for post in posts %}
-            const location = { lat: {{ post.lat }}, lng: {{ post.lng }} };
-            addMarker(location, "{{ post.user }}'s Post");
+            const postLocation = { lat: {{ post.lat }}, lng: {{ post.lng }} };
+            addMarker(postLocation, "{{ post.user }}'s Post");
         {% endfor %}
     }
     
