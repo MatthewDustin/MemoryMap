@@ -15,6 +15,7 @@ import logging
 import signal
 import sys
 import os
+import bcrypt
 import mysql.connector
 from types import FrameType
 
@@ -150,7 +151,8 @@ def login():
         if is_authenticated():
             return redirect(url_for('index'))
         # Add your authentication logic here
-        if checkLoginAttempt(username, password):  # Replace with real auth
+        hash = checkLoginAttempt(username)
+        if verify_password(password, hash):  # Replace with real auth
             session['authenticated'] = True
             session['user'] = username
             
@@ -312,23 +314,28 @@ def test_db():
         return f"Connected! Usernames: {usernames}"
     except Exception as e:
         return f"Error: {e}"
-    
-def hash(password):
-    # Hash the password using a secure hashing algorithm (e.g., bcrypt)
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
 
-def checkLoginAttempt(username, password):
+def verify_password(input_password: str, stored_hash: str) -> bool:
+    return bcrypt.checkpw(input_password.encode(), stored_hash.encode())
+  
+def hash(password):
+    salt = bcrypt.gensalt()
+    # Hash the password with the salt
+    hashed_password = bcrypt.hashpw(password.encode(), salt)
+    return hashed_password.decode()
+
+def checkLoginAttempt(username):
     # Check if the username and password match in the database
     # set URL for database
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hash(password)))
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         result = cursor.fetchone()
+        password = result[2] if result else None
         cursor.close()
         conn.close()
-        return result is not None
+        return password
     except mysql.connector.Error as err:
         logger.error(f"Error: {err}")
         return False

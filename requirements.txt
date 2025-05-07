@@ -8,3 +8,4 @@ sshtunnel==0.4.0
 mysql-connector-python==8.0.33
 bcrypt==4.0.1
 dotenv==0.9.9
+bcrypt
