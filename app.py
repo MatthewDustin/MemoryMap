@@ -29,7 +29,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, EqualTo
 from flask_wtf.recaptcha import RecaptchaField
-
+DATABASE_URL_REPLICA = ""
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -53,12 +53,29 @@ class PostForm(FlaskForm):
     
 def get_db_connection():
     """Establish and return a new database connection."""
-    return mysql.connector.connect(
-        host=os.getenv('DATABASE_URL', 'localhost'),
-        user="admin",
-        password="memorymap",
-        database="memorymapdb"
-    )
+    # check connection
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv('DATABASE_URL', 'localhost'),
+            user="admin",
+            password="memorymap",
+            database="memorymapdb"
+        )
+        return conn
+    except mysql.connector.Error as err:
+        try:
+            logger.error(f"Error: {err}")
+            logger.info("Trying to connect to replica database")
+            conn = mysql.connector.connect(
+                host=DATABASE_URL_REPLICA,
+                user="admin",
+                password="memorymap",
+                database="memorymapdb"
+            )
+            return conn
+        except mysql.connector.Error as err:
+            logger.error(f"Error: {err}")
+            return None
     
 load_dotenv()
 csrf = CSRFProtect()
