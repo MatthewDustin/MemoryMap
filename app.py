@@ -27,10 +27,12 @@ from dotenv import load_dotenv
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, EqualTo
+from flask_wtf.recaptcha import RecaptchaField
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
+    recaptcha = RecaptchaField()
     submit = SubmitField('Login')
     
 class RegisterForm(FlaskForm):
@@ -80,7 +82,6 @@ def create_app():
     # load the instance config, if it exists, when not testing
     app.config.from_prefixed_env()
     app.config.from_pyfile("config.py", silent=True)
-
     gunicorn_logger = logging.getLogger("gunicorn.error")
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
@@ -114,6 +115,8 @@ def create_app():
     return app
 
 app = create_app()
+app.config["RECAPTCHA_PUBLIC_KEY"] = "6LcfqzArAAAAADxnvcdPJDLqK954Zo5NqAbvdHKn"
+app.config["RECAPTCHA_PRIVATE_KEY"] = "6LcfqzArAAAAAM7otJzdKWW-Oc5l-_Dw0GMhZQ2F"
 
 @app.route('/templates/<path:filename>')
 def serve_template(filename):
@@ -142,6 +145,9 @@ def login():
         username = form.username.data
         password = form.password.data
         
+        # Check if the user is already authenticated
+        if is_authenticated():
+            return redirect(url_for('index'))
         # Add your authentication logic here
         if checkLoginAttempt(username, password):  # Replace with real auth
             session['authenticated'] = True
@@ -175,7 +181,10 @@ def register():
         if username in usernames:
             session['error_message'] = 'Username already exists'
             return redirect(url_for('register'))
-        
+        # if password not strong enough
+        if len(password) < 8:
+            session['error_message'] = 'Password must be at least 8 characters long'
+            return redirect(url_for('register'))
         password = hash(password)
         if (addUser(username, password)):
             session['authenticated'] = True
@@ -384,6 +393,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, shutdown_handler)
 
     app.run(host="localhost", port=8080, debug=False)
+    
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)
