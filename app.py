@@ -146,14 +146,8 @@ def login():
         if checkLoginAttempt(username, password):  # Replace with real auth
             session['authenticated'] = True
             session['user'] = username
-            logger.info("User authenticated, showing home page")
-
-            logger.info(logField="custom-entry", arbitraryField="custom-entry")
-            logger.info("Child logger with trace Id.")
-
-            form = PostForm()
-            posts = get_all_posts()
-            return render_template('home.html', user=session.get('user'), form=form, posts=posts)
+            
+            return redirect(url_for('index'))
         else:
             session['error_message'] = 'Invalid username or password'
             return redirect(url_for('login'))
@@ -186,14 +180,8 @@ def register():
         if (addUser(username, password)):
             session['authenticated'] = True
             session['user'] = username
-            logger.info("User authenticated, showing home page")
-
-            logger.info(logField="custom-entry", arbitraryField="custom-entry")
-            logger.info("Child logger with trace Id.")
             
-            form = PostForm()
-            posts = get_all_posts()
-            return render_template('home.html', user=session.get('user'), form=form, posts=posts)
+            return redirect(url_for('index'))
         else:
             session['error_message'] = 'Failed to register user'
             return redirect(url_for('register'))
