@@ -42,6 +42,7 @@ class RegisterForm(FlaskForm):
         DataRequired(),
         EqualTo('password', message='Passwords must match')
     ])
+    recaptcha = RecaptchaField()
     submit = SubmitField('Register')
 
 class PostForm(FlaskForm):
